@@ -1,0 +1,7 @@
+{
+  "version": 2,
+  "projects": {
+    "public-wc": "apps/public-wc",
+    "public-wc-e2e": "e2e/public-wc-e2e"
+  }
+}

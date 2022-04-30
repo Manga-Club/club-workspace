@@ -1,0 +1,60 @@
+{
+  "root": "apps/public-wc",
+  "sourceRoot": "apps/public-wc",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/next:build",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "root": "apps/public-wc",
+        "outputPath": "dist/apps/public-wc"
+      },
+      "configurations": {
+        "development": {},
+        "production": {}
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/next:server",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "public-wc:build",
+        "dev": true
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "public-wc:build:development",
+          "dev": true
+        },
+        "production": {
+          "buildTarget": "public-wc:build:production",
+          "dev": false
+        }
+      }
+    },
+    "export": {
+      "executor": "@nrwl/next:export",
+      "options": {
+        "buildTarget": "public-wc:build:production"
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/apps/public-wc"],
+      "options": {
+        "jestConfig": "apps/public-wc/jest.config.ts",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/public-wc/**/*.{ts,tsx,js,jsx}"]
+      }
+    }
+  },
+  "tags": []
+}

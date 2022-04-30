@@ -1,0 +1,28 @@
+{
+  "root": "e2e/public-wc-e2e",
+  "sourceRoot": "e2e/public-wc-e2e/src",
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nrwl/cypress:cypress",
+      "options": {
+        "cypressConfig": "e2e/public-wc-e2e/cypress.json",
+        "devServerTarget": "public-wc:serve:development"
+      },
+      "configurations": {
+        "production": {
+          "devServerTarget": "public-wc:serve:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["e2e/public-wc-e2e/**/*.{js,ts}"]
+      }
+    }
+  },
+  "tags": [],
+  "implicitDependencies": ["public-wc"]
+}
