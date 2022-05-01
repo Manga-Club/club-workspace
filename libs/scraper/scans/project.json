@@ -1,0 +1,23 @@
+{
+  "root": "libs/scraper/scans",
+  "sourceRoot": "libs/scraper/scans/src",
+  "projectType": "library",
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/scraper/scans/**/*.ts"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/libs/scraper/scans"],
+      "options": {
+        "jestConfig": "libs/scraper/scans/jest.config.ts",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}

@@ -1,0 +1,16 @@
+service:
+  name: chapter-cron
+
+plugins:
+  - serverless-plugin-chrome
+  - serverless-offline
+
+package:
+  exclude:
+    - node_modules/puppeteer/.local-chromium/**
+
+functions:
+  chapter-cron:
+    handler: main # src/app/chapters.getAllChapters
+    events:
+      - schedule: rate(5 minutes)

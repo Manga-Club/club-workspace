@@ -3,6 +3,10 @@
   "projects": {
     "public-api": "apps/public-api",
     "public-wc": "apps/public-wc",
-    "public-wc-e2e": "e2e/public-wc-e2e"
+    "public-wc-e2e": "e2e/public-wc-e2e",
+    "scraper-base": "libs/scraper/base",
+    "scraper-cron": "apps/scraper-cron",
+    "scraper-scans": "libs/scraper/scans",
+    "shared-types": "libs/shared/types"
   }
 }

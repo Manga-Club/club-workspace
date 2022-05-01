@@ -14,7 +14,11 @@
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
-    "paths": {}
+    "paths": {
+      "@manga-club/scraper/base": ["libs/scraper/base/src/index.ts"],
+      "@manga-club/scraper/scans": ["libs/scraper/scans/src/index.ts"],
+      "@manga-club/shared/types": ["libs/shared/types/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "tmp"]
 }
