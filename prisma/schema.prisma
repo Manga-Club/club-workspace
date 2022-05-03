@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Comic {
+  id  String  @default(cuid()) @id
+  name  String
+  type  ComicType
+  description String?
+  coverURL  String?
+  chaptersAmount  Int @default(0)
+  reviwed Boolean @default(false)
+
+  uniqueNames ComicUniqueName[]
+  chapters  Chapter[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ComicUniqueName {
+  id  String  @default(cuid()) @id
+  name  String
+  source  SupportedScan
+
+  comicId String
+
+  comic Comic @relation(fields: [comicId], references: [id])
+}
+
+model Chapter {
+  id  String  @default(cuid()) @id
+  number  Int
+
+  comicId String
+
+  pages Page[]
+  comic Comic @relation(fields: [comicId], references: [id])
+}
+
+model Page {
+  id  String  @default(cuid()) @id
+  number  Int
+  imageUrl  String
+
+  chapterId String
+
+  chapter Chapter @relation(fields: [chapterId], references: [id])
+}
+
+enum ComicType {
+  MANGA
+  MANHWA
+  MANHUWA
+  NOVEL
+}
+
+enum SupportedScan {
+  NEOXSCANS
+}

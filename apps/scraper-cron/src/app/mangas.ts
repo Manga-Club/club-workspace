@@ -1,29 +1,34 @@
 import { Neoxscans } from '@manga-club/scraper/scans';
 import { Logger } from '@nestjs/common';
+import {
+  createComicMany,
+  getAllComicUniqueNames,
+} from '@manga-club/shared/data';
+import { differenceWith } from 'lodash';
 
-const scan = new Neoxscans();
+export const verifyComics = async () => {
+  try {
+    Logger.log('verifyComics - init');
+    const uniqueNamesPromise = await getAllComicUniqueNames();
 
-export const getAllTitles = async () => {
-  Logger.log('- Before Init');
-  await scan.init();
-  Logger.log('- Initialized');
-  // wait(2000);
-  const chapters: any = await scan.getChapters();
-  Logger.log('- Chapters: ', JSON.stringify(chapters));
-  await scan.close();
+    const scan = new Neoxscans();
+    await scan.init();
+    const getAllComicsPromise = scan.getAllComics();
 
-  Logger.log('- Closed');
+    const uniqueNames = await uniqueNamesPromise;
+    const allComics = await getAllComicsPromise;
+    await scan.close();
 
-  //   for (let i = 0; i < chapters.length; i++) {
-  //     wait(2000);
-  //     const current = chapters[i];
-  //     const images = await scan.getChapterImages(current);
-  //     console.log(images);
-  //     current.images = images;
-  //   }
+    const newComics = differenceWith(
+      allComics,
+      uniqueNames,
+      (a, b) => a.name !== b.name
+    );
 
-  //   fs.writeFile('db.json', JSON.stringify(chapters), function (err) {
-  //     if (err) throw err;
-  //     console.log('complete');
-  //   });
+    Logger.log(`Found ${newComics.length} new comics`);
+
+    await createComicMany(newComics);
+  } catch (e) {
+    Logger.error(`Failed to verify comics`, e.message);
+  }
 };

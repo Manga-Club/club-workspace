@@ -1,15 +1,12 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
-import { getAllChapters } from './app/chapters';
-import { Neoxscans } from '@manga-club/scraper/scans';
+import { verifyComics } from './app/mangas';
 
-const scan = new Neoxscans();
-
-export const lambdaHandler = async (
+export const verifyAllComicsHandler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   const queries = JSON.stringify(event.queryStringParameters);
   console.log('---TEST---');
-  await getAllChapters();
+  await verifyComics();
   return {
     statusCode: 200,
     body: `Queries: ${queries}`,
@@ -17,8 +14,5 @@ export const lambdaHandler = async (
 };
 
 (async () => {
-  await scan.init(false);
-  const a = await scan.getAllMangas();
-  console.log(a);
-  await scan.close();
+  // await verifyComics();
 })();

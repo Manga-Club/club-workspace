@@ -18,7 +18,7 @@ package:
 
 functions:
   chapter-cron:
-    handler: ../../dist/apps/scraper-cron/main.lambdaHandler
+    handler: ../../dist/apps/scraper-cron/main.verifyAllComicsHandler
     events:
       - schedule: rate(1 minute)
 

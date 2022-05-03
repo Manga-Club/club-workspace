@@ -1,8 +1,8 @@
 export enum ComicsTypeEnum {
-  MANGA = 0,
-  MANHWA = 1,
-  MANHUWA = 2,
-  NOVEL = 3,
+  MANGA = 'MANGA',
+  MANHWA = 'MANHWA',
+  MANHUWA = 'MANHUWA',
+  NOVEL = 'NOVEL',
 }
 
 export interface INewComic {

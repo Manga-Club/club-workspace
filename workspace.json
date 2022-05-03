@@ -7,6 +7,7 @@
     "scraper-base": "libs/scraper/base",
     "scraper-cron": "apps/scraper-cron",
     "scraper-scans": "libs/scraper/scans",
+    "shared-data": "libs/shared/data",
     "shared-types": "libs/shared/types",
     "shared-util": "libs/shared/util"
   }

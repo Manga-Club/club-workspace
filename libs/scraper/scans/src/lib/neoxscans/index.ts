@@ -1,4 +1,3 @@
-import * as Puppeteer from 'puppeteer';
 import { BaseScan } from '@manga-club/scraper/base';
 import { ComicsTypeEnum, IChapter, INewComic } from '@manga-club/shared/types';
 import { clearText, toUniqueString, wait } from '@manga-club/shared/util';
@@ -15,7 +14,7 @@ export class Neoxscans extends BaseScan {
 
   baseURL = 'https://neoxscans.net';
 
-  async getAllMangas(): Promise<INewComic[]> {
+  async getAllComics(): Promise<INewComic[]> {
     await this.navigate(`${this.baseURL}/home/manga`);
     const page = this.getPage();
 
@@ -56,7 +55,7 @@ export class Neoxscans extends BaseScan {
 
     return allItems
       .map((item) => this.convertComic(item))
-      .filter((item) => !item.type || item.type !== ComicsTypeEnum.NOVEL);
+      .filter((item) => item.type && item.type !== ComicsTypeEnum.NOVEL);
   }
 
   private convertComic(comic: IScrapedComic): INewComic {
