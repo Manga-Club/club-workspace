@@ -16,20 +16,22 @@ model Comic {
   chaptersAmount  Int @default(0)
   reviwed Boolean @default(false)
 
-  uniqueNames ComicUniqueName[]
+  uniqueNames ComicSource[]
   chapters  Chapter[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-model ComicUniqueName {
+model ComicSource {
   id  String  @default(cuid()) @id
-  name  String
+  uniqueName  String  @unique
   source  SupportedScan
+  url String
 
   comicId String
 
+  chapters  Chapter[]
   comic Comic @relation(fields: [comicId], references: [id])
 }
 
@@ -37,10 +39,12 @@ model Chapter {
   id  String  @default(cuid()) @id
   number  Int
 
+  sourceId  String
   comicId String
 
   pages Page[]
   comic Comic @relation(fields: [comicId], references: [id])
+  source  ComicSource @relation(fields: [sourceId], references: [id])
 }
 
 model Page {

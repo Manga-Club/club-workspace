@@ -1,19 +1,16 @@
 import { Neoxscans } from '@manga-club/scraper/scans';
 import { Logger } from '@nestjs/common';
-import { environment } from '../environments/environment';
-import {
-  createComicMany,
-  getAllComicUniqueNames,
-} from '@manga-club/shared/data';
+import { createComicMany, getAllComicSource } from '@manga-club/shared/data';
 import { differenceWith } from 'lodash';
+import { environment } from '../environments/environment';
 
 export const verifyComics = async () => {
   try {
     Logger.log('verifyComics - init');
-    const uniqueNamesPromise = await getAllComicUniqueNames();
+    const uniqueNamesPromise = getAllComicSource();
 
     const scan = new Neoxscans();
-    await scan.init(!environment.production);
+    await scan.init(environment.production);
     const getAllComicsPromise = scan.getAllComics();
 
     const uniqueNames = await uniqueNamesPromise;
@@ -23,7 +20,7 @@ export const verifyComics = async () => {
     const newComics = differenceWith(
       allComics,
       uniqueNames,
-      (a, b) => a.name !== b.name
+      (a, b) => a.name !== b.uniqueName
     );
 
     Logger.log(`Found ${newComics.length} new comics`);

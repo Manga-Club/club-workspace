@@ -1,6 +1,6 @@
 import { BaseScan } from '@manga-club/scraper/base';
 import { ComicsTypeEnum, IChapter, INewComic } from '@manga-club/shared/types';
-import { clearText, toUniqueString, wait } from '@manga-club/shared/util';
+import { clearText, toUniqueString } from '@manga-club/shared/util';
 
 interface IScrapedComic {
   name: string;
@@ -16,23 +16,26 @@ export class Neoxscans extends BaseScan {
 
   async getAllComics(): Promise<INewComic[]> {
     await this.navigate(`${this.baseURL}/home/manga`);
+    await this.page.evaluate(() => (window.alert = () => console.log('alert')));
+
     const MAX_INTERACTIONS = 100;
     let interaction = 0;
     let isLoadMoreVisible = true;
     do {
       this.log('Loading more...');
-      await wait(300);
-      await this.page.click('#navigation-ajax');
-      this.log('Wait Loading...');
+      await this.page.waitForSelector('#navigation-ajax');
+      await this.page.evaluate(() => {
+        const loadMoreBtn = document.querySelector('#navigation-ajax');
+        loadMoreBtn.scrollIntoView();
+        loadMoreBtn['click']();
+      });
       await this.waitForAllRequests();
-      // await this.page.waitForFunction(
-      //   () => !document.querySelector('.show-loading')
-      // );
+
       isLoadMoreVisible = await this.page.evaluate(() => {
         const nav = document.querySelector('.navigation-ajax');
-        return !nav.getAttribute('style');
+        return nav['style'].display !== 'none';
       });
-      this.log(`Has More: ${isLoadMoreVisible}`);
+      this.log(`Interaction: ${interaction} - has more: ${isLoadMoreVisible}`);
       interaction++;
     } while (isLoadMoreVisible && interaction < MAX_INTERACTIONS);
 
@@ -50,11 +53,15 @@ export class Neoxscans extends BaseScan {
       });
     });
 
-    this.log('Filtering data');
+    this.log(`Found ${allItems.length} comics`);
 
-    return allItems
+    const filteredData = allItems
       .map((item) => this.convertComic(item))
       .filter((item) => item.type && item.type !== ComicsTypeEnum.NOVEL);
+
+    this.log(`Filtered ${filteredData.length} comics`);
+
+    return filteredData;
   }
 
   private convertComic(comic: IScrapedComic): INewComic {

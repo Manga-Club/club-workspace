@@ -12,8 +12,9 @@ export const createComicMany = async (comics: INewComic[]) => {
         type: current.type,
         uniqueNames: {
           create: {
-            name: current.uniqueName,
+            uniqueName: current.uniqueName,
             source: 'NEOXSCANS',
+            url: current.url,
           },
         },
       },

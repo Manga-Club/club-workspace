@@ -15,7 +15,7 @@ export abstract class BaseScan implements IBaseScan {
   protected page: Puppeteer.Page;
 
   private pendingRequests: Set<Puppeteer.HTTPRequest> = new Set();
-  private requestPromises: Promise<any>[] = [];
+  private requestPromises: Promise<void>[] = [];
 
   async init(headless = true, resourceType: string[] = ['xhr', 'fetch']) {
     this.log('Initializing browser');
@@ -27,15 +27,19 @@ export abstract class BaseScan implements IBaseScan {
       browserWSEndpoint: chrome.endpoint,
     });
 
-    this.page = await this.browser.newPage();
+    const pages = await this.browser.pages();
+    this.page = pages[0];
     this.makeMeAnonymous();
     this.addNetworkMonitor(resourceType);
   }
 
   async waitForAllRequests() {
-    if (this.pendingRequests.size === 0) {
+    const size = this.pendingRequests.size;
+    if (size === 0) {
       return;
     }
+
+    this.log(`Waiting for ${size} requests`);
     await Promise.all(this.requestPromises);
   }
 
@@ -48,8 +52,8 @@ export abstract class BaseScan implements IBaseScan {
     this.log(`Navigation Finished`);
   }
 
-  log(msg: string) {
-    Logger.log(`[SCRAPER] ${msg}`);
+  log(msg: string, level: 'log' | 'warn' | 'error' = 'log') {
+    Logger[level](`[SCRAPER] ${msg}`);
   }
 
   async close() {
@@ -88,6 +92,7 @@ export abstract class BaseScan implements IBaseScan {
     this.page.on('request', (request) => {
       request.continue();
       if (!resourceType.includes(request.resourceType())) return;
+      this.log(`- [NETWORK] request "${request._requestId}" found`);
 
       this.pendingRequests.add(request);
       this.requestPromises.push(
@@ -99,22 +104,30 @@ export abstract class BaseScan implements IBaseScan {
 
     this.page.on('requestfailed', (request) => {
       if (!resourceType.includes(request.resourceType())) return;
+      this.log(
+        `- [NETWORK] the request "${request.url()}" failed with status: ${request
+          .response()
+          .status()}`,
+        'error'
+      );
 
-      this.pendingRequests.delete(request);
       if (request['resolver']) {
         request['resolver']();
         delete request['resolver'];
       }
+      this.pendingRequests.delete(request);
     });
 
     this.page.on('requestfinished', (request) => {
-      if (resourceType.includes(request.resourceType())) return;
-      this.pendingRequests.delete(request);
+      if (!resourceType.includes(request.resourceType())) return;
+      this.log(`- [NETWORK] the request "${request._requestId}" finished`);
 
       if (request['resolver']) {
         request['resolver']();
         delete request['resolver'];
       }
+
+      this.pendingRequests.delete(request);
     });
   }
 }
