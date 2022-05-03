@@ -1,16 +1,29 @@
-service:
-  name: chapter-cron
+service: chapter-cron
 
 plugins:
   - serverless-plugin-chrome
   - serverless-offline
 
+provider:
+  name: aws
+  stage: dev
+  runtime: nodejs12.x
+  region: 'us-east-1'
+  timeout: 60 # in seconds
+
 package:
   exclude:
     - node_modules/puppeteer/.local-chromium/**
+    - ../../node_modules/puppeteer/.local-chromium/**
 
 functions:
   chapter-cron:
-    handler: main # src/app/chapters.getAllChapters
+    handler: ../../dist/apps/scraper-cron/main.lambdaHandler
     events:
-      - schedule: rate(5 minutes)
+      - schedule: rate(1 minute)
+
+resources:
+  Chapters:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: chapters-${self:provider.stage}

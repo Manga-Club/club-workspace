@@ -7,8 +7,13 @@ export interface IChrome {
   instance: any;
 }
 
-export const getChrome = async (): Promise<IChrome> => {
-  const chrome = await launchChrome();
+export const getChrome = async (headless = true): Promise<IChrome> => {
+  const flags = ['--no-sandbox', '--disable-setuid-sandbox'];
+  if (headless) flags.push('--headless');
+
+  const chrome = await launchChrome({
+    flags,
+  });
 
   const response = await request
     .get(`${chrome.url}/json/version`)

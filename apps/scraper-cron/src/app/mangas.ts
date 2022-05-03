@@ -3,7 +3,7 @@ import { Logger } from '@nestjs/common';
 
 const scan = new Neoxscans();
 
-export const getAllChapters = async () => {
+export const getAllTitles = async () => {
   Logger.log('- Before Init');
   await scan.init();
   Logger.log('- Initialized');

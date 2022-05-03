@@ -1,19 +1,77 @@
 import * as Puppeteer from 'puppeteer';
 import { BaseScan } from '@manga-club/scraper/base';
-import { IChapter } from '@manga-club/shared/types';
+import { ComicsTypeEnum, IChapter, INewComic } from '@manga-club/shared/types';
+import { clearText, toUniqueString, wait } from '@manga-club/shared/util';
 
+interface IScrapedComic {
+  name: string;
+  type?: string;
+  url: string;
+}
 export class Neoxscans extends BaseScan {
-  constructor(url: string) {
+  constructor() {
     super();
-    this.homeUrl = url;
   }
 
-  homeUrl: string;
+  baseURL = 'https://neoxscans.net';
+
+  async getAllMangas(): Promise<INewComic[]> {
+    await this.navigate(`${this.baseURL}/home/manga`);
+    const page = this.getPage();
+
+    const MAX_INTERACTIONS = 100;
+    let interaction = 0;
+    let isLoadMoreVisible = true;
+    do {
+      this.log('Loading more...');
+      await wait(300);
+      await page.click('#navigation-ajax');
+      this.log('Wait Loading...');
+      await page.waitForFunction(
+        () => !document.querySelector('.show-loading')
+      );
+      isLoadMoreVisible = await page.evaluate(() => {
+        const nav = document.querySelector('.navigation-ajax');
+        return !nav.getAttribute('style');
+      });
+      this.log(`Has More: ${isLoadMoreVisible}`);
+      interaction++;
+    } while (isLoadMoreVisible && interaction < MAX_INTERACTIONS);
+
+    this.log('Getting Comics');
+    const allItems = await page.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('.page-item-detail'));
+      return items.map((item) => {
+        const anchor = item.querySelector<HTMLAnchorElement>('h3 a');
+        const typeEl = item.querySelector('.manga-title-badges');
+        return {
+          name: anchor?.textContent,
+          type: typeEl?.textContent,
+          url: anchor?.href?.trim(),
+        };
+      });
+    });
+
+    this.log('Filtering data');
+
+    return allItems
+      .map((item) => this.convertComic(item))
+      .filter((item) => !item.type || item.type !== ComicsTypeEnum.NOVEL);
+  }
+
+  private convertComic(comic: IScrapedComic): INewComic {
+    return {
+      name: clearText(comic.name),
+      uniqueName: toUniqueString(comic.name),
+      type: comic.type && ComicsTypeEnum[clearText(comic.type).toUpperCase()],
+      url: comic.url,
+    };
+  }
 
   getCoverPhoto: () => string;
   async getChapters(): Promise<IChapter[]> {
     const page = this.getPage();
-    await page.goto(this.homeUrl);
+    await page.goto(this.baseURL);
     // await page.waitForNavigation();
     const result = await page.evaluate(() => {
       const chapters = Array.from(
@@ -32,6 +90,10 @@ export class Neoxscans extends BaseScan {
 
     if (result.length === 0) {
       await page.screenshot({ path: `chapters.png` });
+      const data = await page.evaluate(
+        () => document.querySelector('*').outerHTML
+      );
+      console.log(data);
     }
 
     return result;
