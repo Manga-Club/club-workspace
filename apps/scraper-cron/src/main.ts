@@ -14,5 +14,5 @@ export const verifyAllComicsHandler = async (
 };
 
 (async () => {
-  // await verifyComics();
+  await verifyComics();
 })();

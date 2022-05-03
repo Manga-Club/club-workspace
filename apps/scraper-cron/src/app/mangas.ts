@@ -1,5 +1,6 @@
 import { Neoxscans } from '@manga-club/scraper/scans';
 import { Logger } from '@nestjs/common';
+import { environment } from '../environments/environment';
 import {
   createComicMany,
   getAllComicUniqueNames,
@@ -12,7 +13,7 @@ export const verifyComics = async () => {
     const uniqueNamesPromise = await getAllComicUniqueNames();
 
     const scan = new Neoxscans();
-    await scan.init();
+    await scan.init(!environment.production);
     const getAllComicsPromise = scan.getAllComics();
 
     const uniqueNames = await uniqueNamesPromise;

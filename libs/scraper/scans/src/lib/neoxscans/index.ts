@@ -16,20 +16,19 @@ export class Neoxscans extends BaseScan {
 
   async getAllComics(): Promise<INewComic[]> {
     await this.navigate(`${this.baseURL}/home/manga`);
-    const page = this.getPage();
-
     const MAX_INTERACTIONS = 100;
     let interaction = 0;
     let isLoadMoreVisible = true;
     do {
       this.log('Loading more...');
       await wait(300);
-      await page.click('#navigation-ajax');
+      await this.page.click('#navigation-ajax');
       this.log('Wait Loading...');
-      await page.waitForFunction(
-        () => !document.querySelector('.show-loading')
-      );
-      isLoadMoreVisible = await page.evaluate(() => {
+      await this.waitForAllRequests();
+      // await this.page.waitForFunction(
+      //   () => !document.querySelector('.show-loading')
+      // );
+      isLoadMoreVisible = await this.page.evaluate(() => {
         const nav = document.querySelector('.navigation-ajax');
         return !nav.getAttribute('style');
       });
@@ -38,7 +37,7 @@ export class Neoxscans extends BaseScan {
     } while (isLoadMoreVisible && interaction < MAX_INTERACTIONS);
 
     this.log('Getting Comics');
-    const allItems = await page.evaluate(() => {
+    const allItems = await this.page.evaluate(() => {
       const items = Array.from(document.querySelectorAll('.page-item-detail'));
       return items.map((item) => {
         const anchor = item.querySelector<HTMLAnchorElement>('h3 a');
@@ -69,10 +68,9 @@ export class Neoxscans extends BaseScan {
 
   getCoverPhoto: () => string;
   async getChapters(): Promise<IChapter[]> {
-    const page = this.getPage();
-    await page.goto(this.baseURL);
+    await this.page.goto(this.baseURL);
     // await page.waitForNavigation();
-    const result = await page.evaluate(() => {
+    const result = await this.page.evaluate(() => {
       const chapters = Array.from(
         document.querySelectorAll('li.wp-manga-chapter')
       );
@@ -88,8 +86,8 @@ export class Neoxscans extends BaseScan {
     });
 
     if (result.length === 0) {
-      await page.screenshot({ path: `chapters.png` });
-      const data = await page.evaluate(
+      await this.page.screenshot({ path: `chapters.png` });
+      const data = await this.page.evaluate(
         () => document.querySelector('*').outerHTML
       );
       console.log(data);
@@ -99,12 +97,11 @@ export class Neoxscans extends BaseScan {
   }
 
   async getChapterImages(chapter: IChapter) {
-    const page = this.getPage();
     try {
-      await page.goto(chapter.url);
+      await this.page.goto(chapter.url);
       // await wait(2000);
 
-      return await page.evaluate(() => {
+      return await this.page.evaluate(() => {
         const images: HTMLImageElement[] = Array.from(
           document.querySelectorAll('.reading-content img')
         );
@@ -118,7 +115,7 @@ export class Neoxscans extends BaseScan {
         );
       });
     } catch (err) {
-      await page.screenshot({ path: `img_${chapter.number}.png` });
+      await this.page.screenshot({ path: `img_${chapter.number}.png` });
       console.log(err);
     }
   }
