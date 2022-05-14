@@ -1,34 +1,34 @@
-import Puppeteer from 'puppeteer';
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Browser, Page, HTTPRequest } from 'puppeteer-core';
 import * as randomUseragent from 'random-useragent';
 import { IBaseScan } from '@manga-club/shared/types';
 import { USER_AGENT } from './constants';
-import { getChrome } from './chrome-script';
-import { Logger } from '@nestjs/common';
+import { debug, info, success, warn } from '@manga-club/shared/util';
+import { getBrowser } from './chrome-script';
 
 // Check proxy chain for azure deploy
 // https://stackoverflow.com/questions/68930114/bypass-cloudflares-captcha-with-headless-chrome-using-puppeteer-on-heroku
 
 export abstract class BaseScan implements IBaseScan {
-  protected browser: Puppeteer.Browser;
-  protected page: Puppeteer.Page;
+  protected browser: Browser;
+  protected page: Page;
 
-  private pendingRequests: Set<Puppeteer.HTTPRequest> = new Set();
+  private pendingRequests: Set<HTTPRequest> = new Set();
   private requestPromises: Promise<void>[] = [];
 
-  async init(headless = true, resourceType: string[] = ['xhr', 'fetch']) {
-    this.log('Initializing browser');
-    puppeteer.use(StealthPlugin());
-    const chrome = await getChrome(headless);
+  async init(isProduction = true, resourceType: string[] = ['xhr', 'fetch']) {
+    info('Initializing browser');
+    this.browser = await getBrowser(isProduction);
 
-    this.browser = await puppeteer.connect({
-      ignoreHTTPSErrors: true,
-      browserWSEndpoint: chrome.endpoint,
-    });
+    debug('Browser Connected');
 
     const pages = await this.browser.pages();
-    this.page = pages[0];
+    if (pages.length > 0) {
+      this.page = pages[0];
+    } else {
+      this.page = await this.browser.newPage();
+    }
+
     this.makeMeAnonymous();
     this.addNetworkMonitor(resourceType);
   }
@@ -39,25 +39,21 @@ export abstract class BaseScan implements IBaseScan {
       return;
     }
 
-    this.log(`Waiting for ${size} requests`);
+    info(`Waiting for ${size} requests`);
     await Promise.all(this.requestPromises);
   }
 
   async navigate(url: string) {
-    this.log(`Navigating to url: ${url}`);
+    info(`Navigating to url: ${url}`);
     const navigation = this.page.waitForNavigation();
     await this.page.goto(url);
     await navigation;
 
-    this.log(`Navigation Finished`);
-  }
-
-  log(msg: string, level: 'log' | 'warn' | 'error' = 'log') {
-    Logger[level](`[SCRAPER] ${msg}`);
+    debug(`Navigation Finished`);
   }
 
   async close() {
-    this.log('Closing Browser');
+    info('Closing Browser');
     await this.browser.close();
   }
 
@@ -65,8 +61,9 @@ export abstract class BaseScan implements IBaseScan {
     await this.close();
     await this.init();
   }
+
   private async makeMeAnonymous() {
-    this.log('Making me anonymous');
+    debug('Making me anonymous');
     const userAgent = randomUseragent.getRandom();
     const UA = userAgent || USER_AGENT;
 
@@ -86,13 +83,13 @@ export abstract class BaseScan implements IBaseScan {
   }
 
   private async addNetworkMonitor(resourceType: string[] = ['xhr', 'fetch']) {
-    this.log('Adding network monitor');
+    debug('Adding network monitor');
     this.page.setRequestInterception(true);
 
     this.page.on('request', (request) => {
       request.continue();
       if (!resourceType.includes(request.resourceType())) return;
-      this.log(`- [NETWORK] request "${request._requestId}" found`);
+      debug(`- [NETWORK] request "${request._requestId}" found`);
 
       this.pendingRequests.add(request);
       this.requestPromises.push(
@@ -104,10 +101,10 @@ export abstract class BaseScan implements IBaseScan {
 
     this.page.on('requestfailed', (request) => {
       if (!resourceType.includes(request.resourceType())) return;
-      this.log(
-        `- [NETWORK] the request "${request.url()}" failed with status: ${request
-          .response()
-          .status()}`,
+      warn(
+        `- [NETWORK] the request "${
+          request._requestId
+        }"(${request.url()}) failed`,
         'error'
       );
 
@@ -120,7 +117,7 @@ export abstract class BaseScan implements IBaseScan {
 
     this.page.on('requestfinished', (request) => {
       if (!resourceType.includes(request.resourceType())) return;
-      this.log(`- [NETWORK] the request "${request._requestId}" finished`);
+      success(`- [NETWORK] the request "${request._requestId}" finished`);
 
       if (request['resolver']) {
         request['resolver']();

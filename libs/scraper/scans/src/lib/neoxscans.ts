@@ -1,6 +1,12 @@
 import { BaseScan } from '@manga-club/scraper/base';
 import { ComicsTypeEnum, IChapter, INewComic } from '@manga-club/shared/types';
-import { clearText, toUniqueString } from '@manga-club/shared/util';
+import {
+  clearText,
+  info,
+  success,
+  toUniqueString,
+} from '@manga-club/shared/util';
+import { debug } from '@manga-club/shared/util';
 
 interface IScrapedComic {
   name: string;
@@ -22,7 +28,7 @@ export class Neoxscans extends BaseScan {
     let interaction = 0;
     let isLoadMoreVisible = true;
     do {
-      this.log('Loading more...');
+      debug('Loading more comics...');
       await this.page.waitForSelector('#navigation-ajax');
       await this.page.evaluate(() => {
         const loadMoreBtn = document.querySelector('#navigation-ajax');
@@ -35,11 +41,11 @@ export class Neoxscans extends BaseScan {
         const nav = document.querySelector('.navigation-ajax');
         return nav['style'].display !== 'none';
       });
-      this.log(`Interaction: ${interaction} - has more: ${isLoadMoreVisible}`);
+      debug(`Interaction: ${interaction} - has more: ${isLoadMoreVisible}`);
       interaction++;
     } while (isLoadMoreVisible && interaction < MAX_INTERACTIONS);
 
-    this.log('Getting Comics');
+    info('Getting Comics');
     const allItems = await this.page.evaluate(() => {
       const items = Array.from(document.querySelectorAll('.page-item-detail'));
       return items.map((item) => {
@@ -53,13 +59,13 @@ export class Neoxscans extends BaseScan {
       });
     });
 
-    this.log(`Found ${allItems.length} comics`);
+    success(`Found ${allItems.length} comics`);
 
     const filteredData = allItems
       .map((item) => this.convertComic(item))
       .filter((item) => item.type && item.type !== ComicsTypeEnum.NOVEL);
 
-    this.log(`Filtered ${filteredData.length} comics`);
+    success(`Filtered ${filteredData.length} comics`);
 
     return filteredData;
   }

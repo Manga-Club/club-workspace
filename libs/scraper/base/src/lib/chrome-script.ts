@@ -1,28 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import launchChrome from '@serverless-chrome/lambda';
-import request from 'superagent';
+import { Browser } from 'puppeteer-core';
+import Chromium from 'chrome-aws-lambda';
+import puppeteerFromExtra, { addExtra } from 'puppeteer-extra';
+import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
 export interface IChrome {
   endpoint: string;
   instance: any;
 }
 
-export const getChrome = async (headless = true): Promise<IChrome> => {
-  const flags = ['--no-sandbox', '--disable-setuid-sandbox'];
-  if (headless) flags.push('--headless');
-
-  const chrome = await launchChrome({
-    flags,
-  });
-
-  const response = await request
-    .get(`${chrome.url}/json/version`)
-    .set('Content-Type', 'application/json');
-
-  const endpoint = response.body.webSocketDebuggerUrl;
-
-  return {
-    endpoint,
-    instance: chrome,
+export const getBrowser = async (isProduction = true): Promise<Browser> => {
+  const launchOptions = {
+    headless: isProduction,
+    ignoreDefaultArgs: ['--enable-automation'],
+    args: [],
   };
+
+  let puppeteer = null;
+  let executablePath;
+  if (isProduction) {
+    puppeteer = addExtra(Chromium.puppeteer as any);
+    executablePath = await Chromium.executablePath;
+
+    launchOptions['args'] = [...launchOptions.args, ...Chromium.args];
+  } else {
+    const { default: mainPuppeteer } = await import('puppeteer');
+    executablePath = mainPuppeteer['executablePath']();
+    puppeteer = puppeteerFromExtra;
+  }
+
+  launchOptions['executablePath'] = executablePath;
+  puppeteer.use(StealthPlugin());
+  return await puppeteer.launch(launchOptions);
 };

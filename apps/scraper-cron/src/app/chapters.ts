@@ -1,18 +1,18 @@
 import { Neoxscans } from '@manga-club/scraper/scans';
-import { Logger } from '@nestjs/common';
+//import { Logger } from '@nestjs/common';
 
 const scan = new Neoxscans();
 
 export const getAllChapters = async () => {
-  Logger.log('- Before Init');
+  //Logger.log('- Before Init');
   await scan.init();
-  Logger.log('- Initialized');
+  //Logger.log('- Initialized');
   // wait(2000);
   const chapters: any = await scan.getChapters();
-  Logger.log('- Chapters: ', JSON.stringify(chapters));
+  //Logger.log('- Chapters: ', JSON.stringify(chapters));
   await scan.close();
 
-  Logger.log('- Closed');
+  //Logger.log('- Closed');
 
   //   for (let i = 0; i < chapters.length; i++) {
   //     wait(2000);

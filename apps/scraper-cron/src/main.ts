@@ -1,18 +1,23 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { APIGatewayProxyResult } from 'aws-lambda';
 import { verifyComics } from './app/mangas';
 
-export const verifyAllComicsHandler = async (
-  event: APIGatewayProxyEvent
-): Promise<APIGatewayProxyResult> => {
-  const queries = JSON.stringify(event.queryStringParameters);
-  console.log('---TEST---');
-  await verifyComics();
-  return {
-    statusCode: 200,
-    body: `Queries: ${queries}`,
-  };
+export const verifyAllComicsHandler = async (): //event: APIGatewayProxyEvent
+Promise<APIGatewayProxyResult> => {
+  try {
+    await verifyComics();
+    return {
+      statusCode: 200,
+      body: `{ "success": true }`,
+    };
+  } catch (err) {
+    console.log('ERROR: ', err.message);
+    return {
+      statusCode: 500,
+      body: `{ "success": false }`,
+    };
+  }
 };
 
-(async () => {
-  await verifyComics();
-})();
+// (async () => {
+//   await verifyComics();
+// })();

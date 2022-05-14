@@ -1,29 +1,69 @@
-service: chapter-cron
+service: scraper-crons
 
-plugins:
-  - serverless-plugin-chrome
-  - serverless-offline
+useDotenv: true
 
 provider:
   name: aws
   stage: dev
-  runtime: nodejs12.x
+  runtime: nodejs14.x
   region: 'us-east-1'
   timeout: 60 # in seconds
+  environment:
+    DATABASE_URL: ${env:DATABASE_URL}
+    #DEBUG: '*'
 
-package:
-  exclude:
-    - node_modules/puppeteer/.local-chromium/**
-    - ../../node_modules/puppeteer/.local-chromium/**
+plugins:
+  - serverless-esbuild
+  - serverless-offline
+
+custom:
+  esbuild:
+    bundle: true
+    minify: false
+    target: node14
+    packager: 'yarn'
+    sourcemap: true
+    sourcesContent: true
+    keepOutputDirectory: true
+    packagerOptions:
+      scripts:
+        #- mkdir ./node_modules/.prisma
+        - cp -r ../../../../node_modules/.prisma ./node_modules
+        #- rm ./node_modules/.prisma/libquery_engine-darwin-arm64.dylib.node
+        #- mkdir prisma
+        #- cp ../../../../prisma/schema.prisma ./prisma/schema.prisma
+        #- prisma generate
+    external:
+      - chrome-aws-lambda
+      - puppeteer-core
+      #- '@serverless-chrome/lambda'
+      - '@prisma/client'
+      - puppeteer-extra-plugin-stealth
+  chrome:
+    flags:
+      - '--headless'
+      - '--window-size=1280,1696'
+      - '--hide-scrollbars'
 
 functions:
-  chapter-cron:
-    handler: ../../dist/apps/scraper-cron/main.verifyAllComicsHandler
+  comic-cron:
+    name: comic-cron-${self:provider.stage}
+    handler: src/main.verifyAllComicsHandler
     events:
-      - schedule: rate(1 minute)
+      - schedule: cron(14 00 * * ? *) # rate(1 minute) # cron(14 00 * * ? *)
 
 resources:
-  Chapters:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: chapters-${self:provider.stage}
+  Resources:
+    ChaptersBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: chapters-pages-${self:provider.stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods:
+                - GET
+                - HEAD
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
