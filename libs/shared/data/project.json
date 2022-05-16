@@ -10,6 +10,14 @@
         "lintFilePatterns": ["libs/shared/data/**/*.ts"]
       }
     },
+    "build-layers": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": ["sh layers/scripts/prepare-prisma-client-lambda-layer.sh"],
+        "cwd": "libs/shared/data",
+        "parallel": false
+      }
+    },
     "test": {
       "executor": "@nrwl/jest:jest",
       "outputs": ["coverage/libs/shared/data"],

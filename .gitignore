@@ -43,5 +43,4 @@ testem.log
 Thumbs.db
 
 **/.serverless
-
 .env.dev

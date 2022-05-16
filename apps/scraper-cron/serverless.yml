@@ -31,7 +31,7 @@ layers:
     compatibleRuntimes:
       - nodejs12.x
     package:
-      artifact: layers/prisma-client.zip
+      artifact: ../../libs/shared/data/layers/prisma-client.zip
 
 custom:
   webpack:

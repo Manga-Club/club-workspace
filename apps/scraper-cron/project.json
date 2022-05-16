@@ -31,6 +31,14 @@
         "buildTarget": "scraper-cron:build"
       }
     },
+    "deploy": {
+      "executor": "@nrwl/workspace:run-commands",
+      "options": {
+        "commands": ["serverless deploy --verbose"],
+        "cwd": "apps/scraper-cron",
+        "parallel": false
+      }
+    },
     "lint": {
       "executor": "@nrwl/linter:eslint",
       "outputs": ["{options.outputFile}"],
