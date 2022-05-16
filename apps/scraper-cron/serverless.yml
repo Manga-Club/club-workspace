@@ -5,65 +5,57 @@ useDotenv: true
 provider:
   name: aws
   stage: dev
-  runtime: nodejs14.x
+  runtime: nodejs12.x
   region: 'us-east-1'
   timeout: 60 # in seconds
   environment:
     DATABASE_URL: ${env:DATABASE_URL}
+    ENV: ${env.ENV}
     #DEBUG: '*'
 
 plugins:
-  - serverless-esbuild
+  - serverless-webpack
   - serverless-offline
 
+layers:
+  HeadlessChrome:
+    name: HeadlessChrome
+    description: Required for headlessChrome
+    compatibleRuntimes:
+      - nodejs12.x
+    package:
+      artifact: layers/chrome_aws_lambda.zip
+  Prisma:
+    name: Prisma
+    description: Required for Prisma client
+    compatibleRuntimes:
+      - nodejs12.x
+    package:
+      artifact: layers/prisma-client.zip
+
 custom:
-  esbuild:
-    bundle: true
-    minify: false
-    target: node14
+  webpack:
+    webpackConfig: webpack.config.js
     packager: 'yarn'
-    sourcemap: true
-    sourcesContent: true
-    keepOutputDirectory: true
-    packagerOptions:
-      scripts:
-        #- mkdir ./node_modules/.prisma
-        - cp -r ../../../../node_modules/.prisma ./node_modules
-        #- rm ./node_modules/.prisma/libquery_engine-darwin-arm64.dylib.node
-        #- mkdir prisma
-        #- cp ../../../../prisma/schema.prisma ./prisma/schema.prisma
-        #- prisma generate
-    external:
-      - chrome-aws-lambda
-      - puppeteer-core
-      #- '@serverless-chrome/lambda'
-      - '@prisma/client'
-      - puppeteer-extra-plugin-stealth
-  chrome:
-    flags:
-      - '--headless'
-      - '--window-size=1280,1696'
-      - '--hide-scrollbars'
+    includeModules:
+      nodeModulesRelativeDir: '../../'
+      packagePath: '../../package.json'
+      forceInclude:
+        - puppeteer-extra
+        - puppeteer-extra-plugin-stealth
+      forceExclude:
+        - aws-sdk
+        - puppeteer
+        - puppeteer-core
+        - chrome-aws-lambda
+        - '@prisma/client'
 
 functions:
   comic-cron:
     name: comic-cron-${self:provider.stage}
     handler: src/main.verifyAllComicsHandler
+    layers:
+      - { Ref: HeadlessChromeLambdaLayer }
+      - { Ref: PrismaLambdaLayer }
     events:
       - schedule: cron(14 00 * * ? *) # rate(1 minute) # cron(14 00 * * ? *)
-
-resources:
-  Resources:
-    ChaptersBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: chapters-pages-${self:provider.stage}
-        CorsConfiguration:
-          CorsRules:
-            - AllowedMethods:
-                - GET
-                - HEAD
-              AllowedOrigins:
-                - '*'
-              AllowedHeaders:
-                - '*'

@@ -3,7 +3,7 @@ import { Browser, Page, HTTPRequest } from 'puppeteer-core';
 import * as randomUseragent from 'random-useragent';
 import { IBaseScan } from '@manga-club/shared/types';
 import { USER_AGENT } from './constants';
-import { debug, info, success, warn } from '@manga-club/shared/util';
+import { debug, info } from '@manga-club/shared/util';
 import { getBrowser } from './chrome-script';
 
 // Check proxy chain for azure deploy
@@ -89,7 +89,6 @@ export abstract class BaseScan implements IBaseScan {
     this.page.on('request', (request) => {
       request.continue();
       if (!resourceType.includes(request.resourceType())) return;
-      debug(`- [NETWORK] request "${request._requestId}" found`);
 
       this.pendingRequests.add(request);
       this.requestPromises.push(
@@ -101,12 +100,6 @@ export abstract class BaseScan implements IBaseScan {
 
     this.page.on('requestfailed', (request) => {
       if (!resourceType.includes(request.resourceType())) return;
-      warn(
-        `- [NETWORK] the request "${
-          request._requestId
-        }"(${request.url()}) failed`,
-        'error'
-      );
 
       if (request['resolver']) {
         request['resolver']();
@@ -117,7 +110,6 @@ export abstract class BaseScan implements IBaseScan {
 
     this.page.on('requestfinished', (request) => {
       if (!resourceType.includes(request.resourceType())) return;
-      success(`- [NETWORK] the request "${request._requestId}" finished`);
 
       if (request['resolver']) {
         request['resolver']();

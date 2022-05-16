@@ -121,10 +121,7 @@ export class Neoxscans extends BaseScan {
         return images.map(
           (image) =>
             image.src ||
-            image
-              .getAttribute('data-src')
-              .replaceAll('\t', '')
-              .replaceAll('\n', '')
+            image.getAttribute('data-src').replace(/\t/g, '').replace(/\n/g, '')
         );
       });
     } catch (err) {
