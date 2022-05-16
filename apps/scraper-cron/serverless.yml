@@ -2,6 +2,9 @@ service: scraper-crons
 
 useDotenv: true
 
+package:
+  individually: true
+
 provider:
   name: aws
   stage: dev
@@ -53,7 +56,7 @@ custom:
 functions:
   comic-cron:
     name: comic-cron-${self:provider.stage}
-    handler: src/main.verifyAllComicsHandler
+    handler: src/lambda.verifyAllComicsHandler
     layers:
       - { Ref: HeadlessChromeLambdaLayer }
       - { Ref: PrismaLambdaLayer }
