@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Browser, Page, HTTPRequest } from 'puppeteer-core';
+import { Browser, Page, WaitForOptions } from 'puppeteer-core';
 import * as randomUseragent from 'random-useragent';
 import { IBaseScan } from '@manga-club/shared/types';
 import { USER_AGENT } from './constants';
-import { debug, info } from '@manga-club/shared/util';
+import { debug, info, isProduction } from '@manga-club/shared/util';
 import { getBrowser } from './chrome-script';
 
 // Check proxy chain for azure deploy
@@ -13,12 +13,12 @@ export abstract class BaseScan implements IBaseScan {
   protected browser: Browser;
   protected page: Page;
 
-  private pendingRequests: Set<HTTPRequest> = new Set();
-  private requestPromises: Promise<void>[] = [];
+  private resourceType: string[];
 
-  async init(isProduction = true, resourceType: string[] = ['xhr', 'fetch']) {
-    info('Initializing browser');
-    this.browser = await getBrowser(isProduction);
+  async init(resourceType: string[] = ['xhr', 'fetch']) {
+    const isProd = isProduction();
+    info(`Initializing browser as ${isProd ? 'production' : 'NOT production'}`);
+    this.browser = await getBrowser(isProd);
 
     debug('Browser Connected');
 
@@ -30,23 +30,16 @@ export abstract class BaseScan implements IBaseScan {
     }
 
     this.makeMeAnonymous();
-    this.addNetworkMonitor(resourceType);
+    // this.addNetworkMonitor(resourceType);
+    this.resourceType = resourceType;
   }
 
-  async waitForAllRequests() {
-    const size = this.pendingRequests.size;
-    if (size === 0) {
-      return;
-    }
-
-    info(`Waiting for ${size} requests`);
-    await Promise.all(this.requestPromises);
-  }
-
-  async navigate(url: string) {
+  async navigate(url: string, options?: WaitForOptions) {
     info(`Navigating to url: ${url}`);
-    const navigation = this.page.waitForNavigation();
-    await this.page.goto(url);
+    const navigation = this.page.waitForNavigation({
+      ...options,
+    });
+    await this.page.goto(url, options);
     await navigation;
 
     debug(`Navigation Finished`);
@@ -55,11 +48,20 @@ export abstract class BaseScan implements IBaseScan {
   async close() {
     info('Closing Browser');
     await this.browser.close();
+    this.browser = undefined;
+    this.page = undefined;
+  }
+
+  async isCloudFlarePage() {
+    return await this.page.evaluate(() => {
+      const errDiv = document.querySelector('#cf-error-details');
+      return errDiv !== null;
+    });
   }
 
   async refresh() {
     await this.close();
-    await this.init();
+    await this.init(this.resourceType);
   }
 
   private async makeMeAnonymous() {
@@ -80,43 +82,5 @@ export abstract class BaseScan implements IBaseScan {
     await this.page.setJavaScriptEnabled(true);
     await this.page.setCacheEnabled(false);
     this.page.setDefaultNavigationTimeout(0);
-  }
-
-  private async addNetworkMonitor(resourceType: string[] = ['xhr', 'fetch']) {
-    debug('Adding network monitor');
-    this.page.setRequestInterception(true);
-
-    this.page.on('request', (request) => {
-      request.continue();
-      if (!resourceType.includes(request.resourceType())) return;
-
-      this.pendingRequests.add(request);
-      this.requestPromises.push(
-        new Promise((resolve) => {
-          request['resolver'] = resolve;
-        })
-      );
-    });
-
-    this.page.on('requestfailed', (request) => {
-      if (!resourceType.includes(request.resourceType())) return;
-
-      if (request['resolver']) {
-        request['resolver']();
-        delete request['resolver'];
-      }
-      this.pendingRequests.delete(request);
-    });
-
-    this.page.on('requestfinished', (request) => {
-      if (!resourceType.includes(request.resourceType())) return;
-
-      if (request['resolver']) {
-        request['resolver']();
-        delete request['resolver'];
-      }
-
-      this.pendingRequests.delete(request);
-    });
   }
 }

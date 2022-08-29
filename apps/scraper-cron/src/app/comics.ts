@@ -1,16 +1,15 @@
 import { Neoxscans } from '@manga-club/scraper/scans';
 import { createComicMany, getAllComicSource } from '@manga-club/shared/data';
 import { differenceWith } from 'lodash';
-import { debug, error, isProduction, success } from '@manga-club/shared/util';
+import { debug, error, success } from '@manga-club/shared/util';
 
 export const verifyComics = async () => {
   try {
     debug('Verify Comics - INIT');
     const uniqueNamesPromise = getAllComicSource();
-    const isProd = isProduction();
 
     const scan = new Neoxscans();
-    await scan.init(isProd);
+    await scan.init();
     const getAllComicsPromise = scan.getAllComics();
 
     const uniqueNames = await uniqueNamesPromise;

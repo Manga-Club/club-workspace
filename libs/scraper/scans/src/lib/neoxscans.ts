@@ -5,6 +5,7 @@ import {
   info,
   success,
   toUniqueString,
+  warn,
 } from '@manga-club/shared/util';
 import { debug } from '@manga-club/shared/util';
 
@@ -20,44 +21,45 @@ export class Neoxscans extends BaseScan {
 
   baseURL = 'https://neoxscans.net';
 
+  async verifyCloudFlarePage() {
+    const isCloudFlareBlock = await this.isCloudFlarePage();
+    if (isCloudFlareBlock) {
+      warn(`Blocked by CF page, refreshing the browser`);
+      await this.refresh();
+      return true;
+    }
+    return false;
+  }
+
   async getAllComics(): Promise<INewComic[]> {
-    await this.navigate(`${this.baseURL}/home/manga`);
-    await this.page.evaluate(() => (window.alert = () => console.log('alert')));
-
     const MAX_INTERACTIONS = 100;
-    let interaction = 0;
-    let isLoadMoreVisible = true;
+    let interaction = 1;
+    let hasNextPage = true;
+
+    const allItems = [];
     do {
-      debug('Loading more comics...');
-      await this.page.waitForSelector('#navigation-ajax');
-      await this.page.evaluate(() => {
-        const loadMoreBtn = document.querySelector('#navigation-ajax');
-        loadMoreBtn.scrollIntoView();
-        loadMoreBtn['click']();
+      await this.navigate(`${this.baseURL}/manga/page/${interaction}`, {
+        waitUntil: 'networkidle0',
       });
-      await this.waitForAllRequests();
 
-      isLoadMoreVisible = await this.page.evaluate(() => {
-        const nav = document.querySelector('.navigation-ajax');
-        return nav['style'].display !== 'none';
-      });
-      debug(`Interaction: ${interaction} - has more: ${isLoadMoreVisible}`);
+      const wasRestarted = await this.verifyCloudFlarePage();
+      if (wasRestarted) {
+        continue;
+      }
+
+      info('Waiting page to load');
+      await this.page.waitForSelector('.pages');
+
+      info('Getting Comics');
+      const pageItems = await this.getComicsFromCurrentPage();
+      allItems.push(...pageItems);
+
+      const lastPageNumber = await this.getLastPageNumber();
+
+      hasNextPage = interaction < lastPageNumber;
+      debug(`Interaction: ${interaction} - has more: ${hasNextPage}`);
       interaction++;
-    } while (isLoadMoreVisible && interaction < MAX_INTERACTIONS);
-
-    info('Getting Comics');
-    const allItems = await this.page.evaluate(() => {
-      const items = Array.from(document.querySelectorAll('.page-item-detail'));
-      return items.map((item) => {
-        const anchor = item.querySelector<HTMLAnchorElement>('h3 a');
-        const typeEl = item.querySelector('.manga-title-badges');
-        return {
-          name: anchor?.textContent,
-          type: typeEl?.textContent,
-          url: anchor?.href?.trim(),
-        };
-      });
-    });
+    } while (hasNextPage && interaction < MAX_INTERACTIONS);
 
     success(`Found ${allItems.length} comics`);
 
@@ -80,31 +82,31 @@ export class Neoxscans extends BaseScan {
   }
 
   getCoverPhoto: () => string;
-  async getChapters(): Promise<IChapter[]> {
-    await this.page.goto(this.baseURL);
-    // await page.waitForNavigation();
+
+  async getChapters(chapterPageUrl: string): Promise<IChapter[]> {
+    await this.navigate(chapterPageUrl);
+
+    const wasRestarted = await this.verifyCloudFlarePage();
+    if (wasRestarted) {
+      //continue;
+    }
+
     const result = await this.page.evaluate(() => {
       const chapters = Array.from(
         document.querySelectorAll('li.wp-manga-chapter')
       );
 
       return chapters.map((chapter) => {
-        const anchor = chapter.querySelector('a');
+        const anchor = chapter.querySelectorAll('a')[1];
         const href: string = anchor.href;
+        const chapterStr = anchor.textContent.match(/Cap\. \d*/g);
+
         return {
-          number: parseInt(anchor.textContent.replace(/\D/g, '')),
+          number: parseInt(chapterStr[0].replaceAll(/\D/g, '')),
           url: href,
         };
       });
     });
-
-    if (result.length === 0) {
-      await this.page.screenshot({ path: `chapters.png` });
-      const data = await this.page.evaluate(
-        () => document.querySelector('*').outerHTML
-      );
-      console.log(data);
-    }
 
     return result;
   }
@@ -129,4 +131,26 @@ export class Neoxscans extends BaseScan {
       console.log(err);
     }
   }
+
+  private getLastPageNumber = async () =>
+    await this.page.evaluate(() => {
+      const pages = document.querySelector('.pages');
+      const slices = pages.textContent.split(' ');
+      const lastSlice = slices[slices.length - 1];
+      return Number(lastSlice);
+    });
+
+  private getComicsFromCurrentPage = async () =>
+    await this.page.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('.page-item-detail'));
+      return items.map((item) => {
+        const anchor = item.querySelector<HTMLAnchorElement>('h3 a');
+        const typeEl = item.querySelector('.manga-title-badges');
+        return {
+          name: anchor?.textContent,
+          type: typeEl?.textContent,
+          url: anchor?.href?.trim(),
+        };
+      });
+    });
 }

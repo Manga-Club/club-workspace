@@ -1,5 +1,5 @@
 import { APIGatewayProxyResult } from 'aws-lambda';
-import { verifyComics } from './app/mangas';
+import { verifyComics } from './app/comics';
 
 export const verifyAllComicsHandler = async (): //event: APIGatewayProxyEvent
 Promise<APIGatewayProxyResult> => {
