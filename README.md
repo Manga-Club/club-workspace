@@ -1,48 +1,20 @@
-# MangaClub
+# Introduction 
+TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
 
-This repo does use NX so we righly recommend you to use [nx-console plugin](https://marketplace.visualstudio.com/items?itemName=nrwl.angular-console) for vscode
+# Getting Started
+TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
+1.	Installation process
+2.	Software dependencies
+3.	Latest releases
+4.	API references
 
-## Basic setup steps
+# Build and Test
+TODO: Describe and show how to build your code and run the tests. 
 
-- Run `yarn` in the main repo to download all dependencies
+# Contribute
+TODO: Explain how other users and developers can contribute to make your code better. 
 
-# Common tools
-
-### Prisma
-
-Prisma is our ORM so all database changes should be done throught it (`prisma/schema.prisma` file)
-
-#### Quick commands
-
-- Prisma Studio `npx prisma studio`
-- Run migrations, `npx prisma migrate`
-
-# Projects
-
-## SCRAPER-CRON
-
-Here lies our cron functions that gets comics and chapters automatically from our sources,
-it'll also save those resources in our S3 bucket that will be used for our other applications.
-
-### How to build the code
-
-- Before anything, you need to create a .env.environment (.env.dev, .env.staging, .env.prod)
-- Run `serverless package`
-
-### How to deploy
-
-- Before anything, you need to copy your `.env` file from the root path, to the `scraper-cron` folder it should have the name .env.`environment` (.env.dev, .env.staging, .env.prod)
-- Run `cd apps/scraper-cron`
-- Setup you `AWS` [account](https://www.serverless.com/framework/docs/providers/aws/guide/credentials)
-- Run `aws sso login`
-- Run `serverless deploy`
-
-## public-wc
-
-**Should we change this name later?**
-Our public web client, made on [NextJS](https://nextjs.org/), it'll have all public and private routes of our web application
-
-## public-api
-
-**Should we change this name later?**
-Our public api, made on [NestJS](https://nestjs.com)
+If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
+- [ASP.NET Core](https://github.com/aspnet/Home)
+- [Visual Studio Code](https://github.com/Microsoft/vscode)
+- [Chakra Core](https://github.com/Microsoft/ChakraCore)
