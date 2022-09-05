@@ -15,6 +15,11 @@ export abstract class BaseScan implements IBaseScan {
 
   private resourceType: string[];
 
+  /**
+   * Initialize a puppeteer browser and make it anonymous
+   *
+   * @param resourceType
+   */
   async init(resourceType: string[] = ['xhr', 'fetch']) {
     const isProd = isProduction();
     info(`Initializing browser as ${isProd ? 'production' : 'NOT production'}`);
