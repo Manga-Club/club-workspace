@@ -1,4 +1,4 @@
-import { BaseScan } from '@manga-club/scraper/base';
+import { BaseScan, ISource } from '@manga-club/scraper/base';
 import { ComicsTypeEnum, IChapter, INewComic } from '@manga-club/shared/types';
 import {
   clearText,
@@ -14,7 +14,7 @@ interface IScrapedComic {
   type?: string;
   url: string;
 }
-export class Neoxscans extends BaseScan {
+export class Neoxscans extends BaseScan implements ISource {
   constructor() {
     super();
   }
